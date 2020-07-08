@@ -4,12 +4,14 @@
   <arg name="nodelet_manager" default="velodyne_nodelet_manager" />
   <arg name="enable_floor_detection" default="false" />
   <arg name="enable_gps" default="false" />
-  <arg name="enable_imu_acc" default="false" />
-  <arg name="enable_imu_ori" default="false" />
+  <arg name="enable_imu_acc" default="true" />
+  <arg name="enable_imu_ori" default="true" />
   <arg name="points_topic" default="/velodyne_points" />
+  <arg name="imu_topic" default="/imu/data" />
 
   <!-- transformation between lidar and base_link -->
-  <node pkg="tf" type="static_transform_publisher" name="lidar2base_publisher" args="0 0 0 0 0 0 base_link velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="lidar2base_publisher0" args="0 0 0 0 0 0 base_link velodyne 10" />
+  <node pkg="tf" type="static_transform_publisher" name="lidar2base_publisher1" args="0 0 0 0 0 0 base_link imu 10" />
 
   <!-- in case you use velodyne_driver, comment out the following line -->
   <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)" args="manager" output="screen"/>
@@ -17,6 +19,7 @@
   <!-- prefiltering_nodelet -->
   <node pkg="nodelet" type="nodelet" name="prefiltering_nodelet" args="load hdl_graph_slam/PrefilteringNodelet $(arg nodelet_manager)">
     <remap from="/velodyne_points" to="$(arg points_topic)" />
+
     <!-- in case base_link_frame is blank, mapping will be performed in the lidar frame -->
     <param name="base_link_frame" value="base_link" />
     <!-- distance filter -->
@@ -37,6 +40,7 @@
   <!-- scan_matching_odometry_nodelet -->
   <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
       <param name="points_topic" value="$(arg points_topic)" />
+      <remap from="/gpsimu_driver/imu_data" to="$(arg imu_topic)" />
       <param name="odom_frame_id" value="odom" />
       <param name="keyframe_delta_trans" value="1.0" />
       <param name="keyframe_delta_angle" value="1.0" />
@@ -61,6 +65,7 @@
   <!-- floor_detection_nodelet -->
   <node pkg="nodelet" type="nodelet" name="floor_detection_nodelet" args="load hdl_graph_slam/FloorDetectionNodelet $(arg nodelet_manager)" if="$(arg enable_floor_detection)">
     <param name="points_topic" value="$(arg points_topic)" />
+    <remap from="/gpsimu_driver/imu_data" to="$(arg imu_topic)" />
     <param name="tilt_deg" value="0.0" />
     <param name="sensor_height" value="2.0" />
     <param name="height_clip_range" value="1.0" />
@@ -72,6 +77,7 @@
   <!-- hdl_graph_slam_nodelet -->
   <node pkg="nodelet" type="nodelet" name="hdl_graph_slam_nodelet" args="load hdl_graph_slam/HdlGraphSlamNodelet $(arg nodelet_manager)">
     <param name="points_topic" value="$(arg points_topic)" />
+    <remap from="/gpsimu_driver/imu_data" to="$(arg imu_topic)" />
     <!-- frame settings -->
     <param name="map_frame_id" value="map" />
     <param name="odom_frame_id" value="odom" />
